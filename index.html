@@ -1,210 +1,418 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Attendance Marking System</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 30px;
-            background-color: #f4f7f6;
-            text-align: center;
-        }
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        }
-        .section {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #webcam-container, #image-preview-container {
-            margin-top: 15px;
-            display: flex;
-            justify-content: center;
-        }
-        #image-preview {
-            max-width: 100%;
-            max-height: 300px;
-            border-radius: 8px;
-            display: none;
-        }
-        #attendance-result {
-            font-size: 20px;
-            font-weight: bold;
-            color: #333;
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #e7f3fe;
-            border-left: 6px solid #2196F3;
-            display: none;
-        }
-        .loading {
-            color: #888;
-            font-style: italic;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Attendance System</title>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+
+    background:#edf3fb;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    padding:20px;
+
+}
+
+.container{
+
+    width:100%;
+    max-width:500px;
+
+    background:white;
+
+    border-radius:18px;
+
+    padding:30px;
+
+    box-shadow:0 15px 35px rgba(0,0,0,.08);
+
+}
+
+h1{
+
+    color:#2563eb;
+    text-align:center;
+    margin-bottom:8px;
+
+}
+
+.subtitle{
+
+    text-align:center;
+    color:#666;
+    margin-bottom:25px;
+
+}
+
+#status{
+
+    text-align:center;
+    color:#2563eb;
+    margin-bottom:20px;
+    font-weight:bold;
+
+}
+
+.upload-btn{
+
+    display:block;
+
+    width:100%;
+
+    padding:14px;
+
+    background:#2563eb;
+
+    color:white;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+    text-align:center;
+
+    transition:.2s;
+
+    font-size:17px;
+
+}
+
+.upload-btn:hover{
+
+    background:#1d4ed8;
+
+}
+
+input[type=file]{
+
+    display:none;
+
+}
+
+.preview-box{
+
+    margin-top:20px;
+
+    border:2px dashed #cbd5e1;
+
+    border-radius:12px;
+
+    min-height:300px;
+
+    display:flex;
+
+    justify-content:center;
+
+    align-items:center;
+
+    overflow:hidden;
+
+    background:#f8fafc;
+
+}
+
+.preview-box img{
+
+    width:100%;
+    height:300px;
+    object-fit:cover;
+    display:none;
+
+}
+
+.placeholder{
+
+    color:#999;
+    font-size:18px;
+
+}
+
+#predict-btn{
+
+    width:100%;
+
+    margin-top:20px;
+
+    padding:15px;
+
+    background:#16a34a;
+
+    color:white;
+
+    border:none;
+
+    border-radius:10px;
+
+    cursor:pointer;
+
+    font-size:17px;
+
+    transition:.2s;
+
+}
+
+#predict-btn:hover{
+
+    background:#15803d;
+
+}
+
+#predict-btn:disabled{
+
+    background:#bdbdbd;
+    cursor:not-allowed;
+
+}
+
+.result{
+
+    display:none;
+
+    margin-top:25px;
+
+    border-radius:12px;
+
+    padding:18px;
+
+    text-align:center;
+
+}
+
+.success{
+
+    background:#dcfce7;
+
+    border-left:6px solid #16a34a;
+
+}
+
+.fail{
+
+    background:#fee2e2;
+
+    border-left:6px solid #dc2626;
+
+}
+
+.result h2{
+
+    margin-bottom:10px;
+
+}
+
+.name{
+
+    font-size:28px;
+
+    color:#2563eb;
+
+    margin-bottom:8px;
+
+    font-weight:bold;
+
+}
+
+.confidence{
+
+    color:#555;
+
+}
+
+</style>
+
 </head>
 <body>
 
 <div class="container">
-    <h2>Attendance System</h2>
-    <p id="status" class="loading">Loading Teachable Machine Model...</p>
 
-    <div class="section">
-        <h3>Option 1: Upload Student Photo</h3>
-        <input type="file" id="image-upload" accept="image/*" disabled>
-        <div id="image-preview-container">
-            <img id="image-preview" alt="Selected Student Image">
-        </div>
-    </div>
+<h1>AI Attendance System</h1>
 
-    <div class="section">
-        <h3>Option 2: Live Camera Feed</h3>
-        <button id="webcam-btn" onclick="setupWebcam()" disabled>Start Webcam</button>
-        <div id="webcam-container"></div>
-    </div>
+<p class="subtitle">
+Upload a student's image to mark attendance
+</p>
 
-    <div id="attendance-result"></div>
+<p id="status">
+Loading AI Model...
+</p>
+
+<label class="upload-btn" for="image-upload">
+📷 Upload Student Image
+</label>
+
+<input
+type="file"
+id="image-upload"
+accept="image/*"
+disabled>
+
+<div class="preview-box">
+
+<p class="placeholder" id="placeholder">
+No image selected
+</p>
+
+<img id="image-preview">
+
+</div>
+
+<button id="predict-btn" disabled>
+
+Mark Attendance
+
+</button>
+
+<div id="attendance-result" class="result"></div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script>
-    // Your specific Teachable Machine model URL
-    const URL = "https://teachablemachine.withgoogle.com/models/gDP_0CMKW/";
 
-    let model, webcam, maxPredictions;
-    let isWebcamActive = false;
+const URL="https://teachablemachine.withgoogle.com/models/gDP_0CMKW/";
 
-    // Load the image model on page load
-    async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
+let model;
+let maxPredictions;
 
-        try {
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-            
-            // Enable inputs once model is ready
-            document.getElementById("status").innerText = "Model Loaded successfully! Choose an option below.";
-            document.getElementById("status").className = "";
-            document.getElementById("image-upload").disabled = false;
-            document.getElementById("webcam-btn").disabled = false;
-        } catch (error) {
-            document.getElementById("status").innerText = "Error loading model. Check your URL or internet connection.";
-            console.error(error);
-        }
-    }
+const upload=document.getElementById("image-upload");
+const preview=document.getElementById("image-preview");
+const placeholder=document.getElementById("placeholder");
+const predictBtn=document.getElementById("predict-btn");
+const result=document.getElementById("attendance-result");
 
-    // --- HANDLE IMAGE UPLOAD PATH ---
-    const imageUpload = document.getElementById('image-upload');
-    const imagePreview = document.getElementById('image-preview');
+async function init(){
 
-    imageUpload.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
+const modelURL=URL+"model.json";
+const metadataURL=URL+"metadata.json";
 
-        // Stop webcam if it's running to avoid conflicts
-        stopWebcam();
+try{
 
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            imagePreview.src = event.target.result;
-            imagePreview.style.display = "block";
-            
-            // Wait for image element to load its new source before predicting
-            imagePreview.onload = async function() {
-                await predict(imagePreview);
-            }
-        }
-        reader.readAsDataURL(file);
-    });
+model=await tmImage.load(modelURL,metadataURL);
 
-    // --- HANDLE WEBCAM PATH ---
-    async function setupWebcam() {
-        if (isWebcamActive) {
-            stopWebcam();
-            return;
-        }
+maxPredictions=model.getTotalClasses();
 
-        document.getElementById("webcam-btn").innerText = "Stop Webcam";
-        imagePreview.style.display = "none"; // Hide uploaded image if any
-        isWebcamActive = true;
+status.innerHTML="✅ Model Loaded Successfully";
 
-        const flip = true; // whether to flip the webcam
-        webcam = new tmImage.Webcam(300, 300, flip); 
-        await webcam.setup(); // request access to the webcam
-        await webcam.play();
-        
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
-        window.requestAnimationFrame(loop);
-    }
+upload.disabled=false;
 
-    async function loop() {
-        if (!isWebcamActive) return;
-        webcam.update(); // update the webcam frame
-        await predict(webcam.canvas);
-        window.requestAnimationFrame(loop);
-    }
+}
 
-    function stopWebcam() {
-        if (webcam) {
-            webcam.stop();
-            document.getElementById("webcam-container").innerHTML = "";
-            document.getElementById("webcam-btn").innerText = "Start Webcam";
-            isWebcamActive = false;
-        }
-    }
+catch(e){
 
-    // --- PREDICTION & ATTENDANCE LOGIC ---
-    async function predict(inputElement) {
-        // predict can take in an image, video or canvas html element
-        const prediction = await model.predict(inputElement);
-        
-        let highestScore = 0;
-        let recognizedClass = "";
+status.innerHTML="❌ Failed to load model";
 
-        // Find the class with the highest probability
-        for (let i = 0; i < maxPredictions; i++) {
-            if (prediction[i].probability > highestScore) {
-                highestScore = prediction[i].probability;
-                recognizedClass = prediction[i].className;
-            }
-        }
+console.error(e);
 
-        // Mark attendance if confidence score is above 75%
-        const resultDiv = document.getElementById("attendance-result");
-        if (highestScore > 0.60 && recognizedClass.toLowerCase() !== "background" && recognizedClass.toLowerCase() !== "unknown") {
-            resultDiv.innerHTML = `✅ Attendance Marked:<br><strong style="font-size: 24px; color: #4CAF50;">${recognizedClass}</strong><br><span style="font-size: 12px; color: #777;">Confidence: ${(highestScore * 100).toFixed(1)}%</span>`;
-        } else {
-            resultDiv.innerHTML = `❌ Face not recognized clearly.<br><span style="font-size: 12px; color: #777;">Highest match: ${recognizedClass} (${(highestScore * 100).toFixed(1)}%)</span>`;
-        }
-        resultDiv.style.display = "block";
-    }
+}
 
-    // Run initializer on window load
-    window.onload = init;
+}
+
+upload.addEventListener("change",function(e){
+
+const file=e.target.files[0];
+
+if(!file)return;
+
+const reader=new FileReader();
+
+reader.onload=function(ev){
+
+preview.src=ev.target.result;
+
+preview.style.display="block";
+
+placeholder.style.display="none";
+
+predictBtn.disabled=false;
+
+}
+
+reader.readAsDataURL(file);
+
+});
+
+predictBtn.onclick=async()=>{
+
+const prediction=await model.predict(preview);
+
+let best="";
+
+let score=0;
+
+prediction.forEach(p=>{
+
+if(p.probability>score){
+
+score=p.probability;
+
+best=p.className;
+
+}
+
+});
+
+result.style.display="block";
+
+if(score>.60 &&
+best.toLowerCase()!="background" &&
+best.toLowerCase()!="unknown"){
+
+result.className="result success";
+
+result.innerHTML=`
+
+<h2>✅ Attendance Marked</h2>
+
+<div class="name">${best}</div>
+
+<div class="confidence">
+
+Confidence: ${(score*100).toFixed(2)}%
+
+</div>
+
+`;
+
+}
+
+else{
+
+result.className="result fail";
+
+result.innerHTML=`
+
+<h2>❌ Student Not Recognized</h2>
+
+<div class="name">${best}</div>
+
+<div class="confidence">
+
+Highest Match: ${(score*100).toFixed(2)}%
+
+</div>
+
+`;
+
+}
+
+};
+
+window.onload=init;
+
 </script>
 
 </body>
