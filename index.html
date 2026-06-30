@@ -2,292 +2,56 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>AI Attendance System</title>
-
 <style>
-
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial,Helvetica,sans-serif;
-}
-
-body{
-
-    background:#edf3fb;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    min-height:100vh;
-    padding:20px;
-
-}
-
-.container{
-
-    width:100%;
-    max-width:500px;
-
-    background:white;
-
-    border-radius:18px;
-
-    padding:30px;
-
-    box-shadow:0 15px 35px rgba(0,0,0,.08);
-
-}
-
-h1{
-
-    color:#2563eb;
-    text-align:center;
-    margin-bottom:8px;
-
-}
-
-.subtitle{
-
-    text-align:center;
-    color:#666;
-    margin-bottom:25px;
-
-}
-
-#status{
-
-    text-align:center;
-    color:#2563eb;
-    margin-bottom:20px;
-    font-weight:bold;
-
-}
-
-.upload-btn{
-
-    display:block;
-
-    width:100%;
-
-    padding:14px;
-
-    background:#2563eb;
-
-    color:white;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    text-align:center;
-
-    transition:.2s;
-
-    font-size:17px;
-
-}
-
-.upload-btn:hover{
-
-    background:#1d4ed8;
-
-}
-
-input[type=file]{
-
-    display:none;
-
-}
-
-.preview-box{
-
-    margin-top:20px;
-
-    border:2px dashed #cbd5e1;
-
-    border-radius:12px;
-
-    min-height:300px;
-
-    display:flex;
-
-    justify-content:center;
-
-    align-items:center;
-
-    overflow:hidden;
-
-    background:#f8fafc;
-
-}
-
-.preview-box img{
-
-    width:100%;
-    height:300px;
-    object-fit:cover;
-    display:none;
-
-}
-
-.placeholder{
-
-    color:#999;
-    font-size:18px;
-
-}
-
-#predict-btn{
-
-    width:100%;
-
-    margin-top:20px;
-
-    padding:15px;
-
-    background:#16a34a;
-
-    color:white;
-
-    border:none;
-
-    border-radius:10px;
-
-    cursor:pointer;
-
-    font-size:17px;
-
-    transition:.2s;
-
-}
-
-#predict-btn:hover{
-
-    background:#15803d;
-
-}
-
-#predict-btn:disabled{
-
-    background:#bdbdbd;
-    cursor:not-allowed;
-
-}
-
-.result{
-
-    display:none;
-
-    margin-top:25px;
-
-    border-radius:12px;
-
-    padding:18px;
-
-    text-align:center;
-
-}
-
-.success{
-
-    background:#dcfce7;
-
-    border-left:6px solid #16a34a;
-
-}
-
-.fail{
-
-    background:#fee2e2;
-
-    border-left:6px solid #dc2626;
-
-}
-
-.result h2{
-
-    margin-bottom:10px;
-
-}
-
-.name{
-
-    font-size:28px;
-
-    color:#2563eb;
-
-    margin-bottom:8px;
-
-    font-weight:bold;
-
-}
-
-.confidence{
-
-    color:#555;
-
-}
-
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,sans-serif}
+body{background:#edf3fb;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.container{max-width:520px;width:100%;background:#fff;border-radius:18px;padding:30px;box-shadow:0 15px 35px rgba(0,0,0,.08)}
+h1{text-align:center;color:#2563eb;margin-bottom:8px}
+.subtitle{text-align:center;color:#666;margin-bottom:18px}
+#status{text-align:center;font-weight:bold;color:#2563eb;margin-bottom:18px}
+.upload-btn{display:block;width:100%;padding:14px;background:#2563eb;color:#fff;border-radius:10px;text-align:center;cursor:pointer}
+.upload-btn:hover{background:#1d4ed8}
+input[type=file]{display:none}
+.preview{margin-top:20px;border:2px dashed #cbd5e1;border-radius:12px;height:300px;display:flex;align-items:center;justify-content:center;background:#f8fafc;overflow:hidden}
+.preview img{display:none;width:100%;height:100%;object-fit:cover}
+#placeholder{color:#888}
+button{margin-top:20px;width:100%;padding:14px;border:none;border-radius:10px;background:#16a34a;color:#fff;font-size:16px;cursor:pointer}
+button:disabled{background:#bbb;cursor:not-allowed}
+.result{display:none;margin-top:20px;padding:18px;border-radius:12px;text-align:center}
+.success{background:#dcfce7;border-left:6px solid #16a34a}
+.fail{background:#fee2e2;border-left:6px solid #dc2626}
+.name{font-size:28px;color:#2563eb;font-weight:bold;margin:8px 0}
 </style>
-
 </head>
 <body>
-
 <div class="container">
-
 <h1>AI Attendance System</h1>
+<p class="subtitle">Upload a student's photo to mark attendance</p>
+<p id="status">Loading AI Model...</p>
 
-<p class="subtitle">
-Upload a student's image to mark attendance
-</p>
+<label class="upload-btn" for="image-upload">📷 Upload Student Image</label>
+<input id="image-upload" type="file" accept="image/*" disabled>
 
-<p id="status">
-Loading AI Model...
-</p>
-
-<label class="upload-btn" for="image-upload">
-📷 Upload Student Image
-</label>
-
-<input
-type="file"
-id="image-upload"
-accept="image/*"
-disabled>
-
-<div class="preview-box">
-
-<p class="placeholder" id="placeholder">
-No image selected
-</p>
-
+<div class="preview">
+<span id="placeholder">No image selected</span>
 <img id="image-preview">
-
 </div>
 
-<button id="predict-btn" disabled>
-
-Mark Attendance
-
-</button>
+<button id="predict-btn" disabled>Mark Attendance</button>
 
 <div id="attendance-result" class="result"></div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script>
-
 const URL="https://teachablemachine.withgoogle.com/models/gDP_0CMKW/";
-
 let model;
-let maxPredictions;
 
+const statusEl=document.getElementById("status");
 const upload=document.getElementById("image-upload");
 const preview=document.getElementById("image-preview");
 const placeholder=document.getElementById("placeholder");
@@ -295,125 +59,49 @@ const predictBtn=document.getElementById("predict-btn");
 const result=document.getElementById("attendance-result");
 
 async function init(){
-
-const modelURL=URL+"model.json";
-const metadataURL=URL+"metadata.json";
-
-try{
-
-model=await tmImage.load(modelURL,metadataURL);
-
-maxPredictions=model.getTotalClasses();
-
-status.innerHTML="✅ Model Loaded Successfully";
-
-upload.disabled=false;
-
+ try{
+   model=await tmImage.load(URL+"model.json",URL+"metadata.json");
+   statusEl.textContent="✅ Model Loaded Successfully";
+   statusEl.style.color="#16a34a";
+   upload.disabled=false;
+   setTimeout(()=>statusEl.style.display="none",2000);
+ }catch(e){
+   console.error(e);
+   statusEl.textContent="❌ Failed to load AI Model";
+   statusEl.style.color="#dc2626";
+ }
 }
 
-catch(e){
-
-status.innerHTML="❌ Failed to load model";
-
-console.error(e);
-
-}
-
-}
-
-upload.addEventListener("change",function(e){
-
-const file=e.target.files[0];
-
-if(!file)return;
-
-const reader=new FileReader();
-
-reader.onload=function(ev){
-
-preview.src=ev.target.result;
-
-preview.style.display="block";
-
-placeholder.style.display="none";
-
-predictBtn.disabled=false;
-
-}
-
-reader.readAsDataURL(file);
-
+upload.addEventListener("change",e=>{
+ const file=e.target.files[0];
+ if(!file) return;
+ const reader=new FileReader();
+ reader.onload=ev=>{
+   preview.src=ev.target.result;
+   preview.style.display="block";
+   placeholder.style.display="none";
+   predictBtn.disabled=false;
+   result.style.display="none";
+ };
+ reader.readAsDataURL(file);
 });
 
 predictBtn.onclick=async()=>{
+ const predictions=await model.predict(preview);
+ let best=predictions[0];
+ predictions.forEach(p=>{if(p.probability>best.probability) best=p;});
 
-const prediction=await model.predict(preview);
-
-let best="";
-
-let score=0;
-
-prediction.forEach(p=>{
-
-if(p.probability>score){
-
-score=p.probability;
-
-best=p.className;
-
-}
-
-});
-
-result.style.display="block";
-
-if(score>.60 &&
-best.toLowerCase()!="background" &&
-best.toLowerCase()!="unknown"){
-
-result.className="result success";
-
-result.innerHTML=`
-
-<h2>✅ Attendance Marked</h2>
-
-<div class="name">${best}</div>
-
-<div class="confidence">
-
-Confidence: ${(score*100).toFixed(2)}%
-
-</div>
-
-`;
-
-}
-
-else{
-
-result.className="result fail";
-
-result.innerHTML=`
-
-<h2>❌ Student Not Recognized</h2>
-
-<div class="name">${best}</div>
-
-<div class="confidence">
-
-Highest Match: ${(score*100).toFixed(2)}%
-
-</div>
-
-`;
-
-}
-
+ result.style.display="block";
+ if(best.probability>0.60 && !["background","unknown"].includes(best.className.toLowerCase())){
+   result.className="result success";
+   result.innerHTML=`<h2>✅ Attendance Marked</h2><div class="name">${best.className}</div><p>Confidence: ${(best.probability*100).toFixed(2)}%</p>`;
+ }else{
+   result.className="result fail";
+   result.innerHTML=`<h2>❌ Student Not Recognized</h2><div class="name">${best.className}</div><p>Highest Match: ${(best.probability*100).toFixed(2)}%</p>`;
+ }
 };
 
 window.onload=init;
-
 </script>
-
 </body>
 </html>
