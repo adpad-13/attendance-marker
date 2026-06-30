@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Attendance Marking System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 30px;
+            background-color: #f4f7f6;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #webcam-container, #image-preview-container {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+        }
+        #image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            display: none;
+        }
+        #attendance-result {
+            font-size: 20px;
+            font-weight: bold;
+            color: #333;
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #e7f3fe;
+            border-left: 6px solid #2196F3;
+            display: none;
+        }
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Attendance System</h2>
+    <p id="status" class="loading">Loading Teachable Machine Model...</p>
+
+    <div class="section">
+        <h3>Option 1: Upload Student Photo</h3>
+        <input type="file" id="image-upload" accept="image/*" disabled>
+        <div id="image-preview-container">
+            <img id="image-preview" alt="Selected Student Image">
+        </div>
+    </div>
+
+    <div class="section">
+        <h3>Option 2: Live Camera Feed</h3>
+        <button id="webcam-btn" onclick="setupWebcam()" disabled>Start Webcam</button>
+        <div id="webcam-container"></div>
+    </div>
+
+    <div id="attendance-result"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
+<script>
+    // Your specific Teachable Machine model URL
+    const URL = "https://teachablemachine.withgoogle.com/models/gDP_0CMKW/";
+
+    let model, webcam, maxPredictions;
+    let isWebcamActive = false;
+
+    // Load the image model on page load
+    async function init() {
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
+
+        try {
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+            
+            // Enable inputs once model is ready
+            document.getElementById("status").innerText = "Model Loaded successfully! Choose an option below.";
+            document.getElementById("status").className = "";
+            document.getElementById("image-upload").disabled = false;
+            document.getElementById("webcam-btn").disabled = false;
+        } catch (error) {
+            document.getElementById("status").innerText = "Error loading model. Check your URL or internet connection.";
+            console.error(error);
+        }
+    }
+
+    // --- HANDLE IMAGE UPLOAD PATH ---
+    const imageUpload = document.getElementById('image-upload');
+    const imagePreview = document.getElementById('image-preview');
+
+    imageUpload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        // Stop webcam if it's running to avoid conflicts
+        stopWebcam();
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            imagePreview.src = event.target.result;
+            imagePreview.style.display = "block";
+            
+            // Wait for image element to load its new source before predicting
+            imagePreview.onload = async function() {
+                await predict(imagePreview);
+            }
+        }
+        reader.readAsDataURL(file);
+    });
+
+    // --- HANDLE WEBCAM PATH ---
+    async function setupWebcam() {
+        if (isWebcamActive) {
+            stopWebcam();
+            return;
+        }
+
+        document.getElementById("webcam-btn").innerText = "Stop Webcam";
+        imagePreview.style.display = "none"; // Hide uploaded image if any
+        isWebcamActive = true;
+
+        const flip = true; // whether to flip the webcam
+        webcam = new tmImage.Webcam(300, 300, flip); 
+        await webcam.setup(); // request access to the webcam
+        await webcam.play();
+        
+        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        window.requestAnimationFrame(loop);
+    }
+
+    async function loop() {
+        if (!isWebcamActive) return;
+        webcam.update(); // update the webcam frame
+        await predict(webcam.canvas);
+        window.requestAnimationFrame(loop);
+    }
+
+    function stopWebcam() {
+        if (webcam) {
+            webcam.stop();
+            document.getElementById("webcam-container").innerHTML = "";
+            document.getElementById("webcam-btn").innerText = "Start Webcam";
+            isWebcamActive = false;
+        }
+    }
+
+    // --- PREDICTION & ATTENDANCE LOGIC ---
+    async function predict(inputElement) {
+        // predict can take in an image, video or canvas html element
+        const prediction = await model.predict(inputElement);
+        
+        let highestScore = 0;
+        let recognizedClass = "";
+
+        // Find the class with the highest probability
+        for (let i = 0; i < maxPredictions; i++) {
+            if (prediction[i].probability > highestScore) {
+                highestScore = prediction[i].probability;
+                recognizedClass = prediction[i].className;
+            }
+        }
+
+        // Mark attendance if confidence score is above 75%
+        const resultDiv = document.getElementById("attendance-result");
+        if (highestScore > 0.60 && recognizedClass.toLowerCase() !== "background" && recognizedClass.toLowerCase() !== "unknown") {
+            resultDiv.innerHTML = `✅ Attendance Marked:<br><strong style="font-size: 24px; color: #4CAF50;">${recognizedClass}</strong><br><span style="font-size: 12px; color: #777;">Confidence: ${(highestScore * 100).toFixed(1)}%</span>`;
+        } else {
+            resultDiv.innerHTML = `❌ Face not recognized clearly.<br><span style="font-size: 12px; color: #777;">Highest match: ${recognizedClass} (${(highestScore * 100).toFixed(1)}%)</span>`;
+        }
+        resultDiv.style.display = "block";
+    }
+
+    // Run initializer on window load
+    window.onload = init;
+</script>
+
+</body>
+</html>
